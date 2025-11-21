@@ -159,7 +159,7 @@ h1, h2, h3 {
     color: #4b5563;
     margin-bottom: 12px;
 }
-    
+
 </style>
 """,
     unsafe_allow_html=True,
@@ -173,7 +173,7 @@ CSV_PATH = "collection.csv"
 # FUNÇÕES AUXILIARES DE DADOS
 # =========================================================
 def load_collection(csv_path: str) -> pd.DataFrame:
-    df = pd.read_excel(csv_path)
+    df = pd.read_csv(csv_path)
     if "own" in df.columns:
         df = df[df["own"] == 1]
     for col in [
