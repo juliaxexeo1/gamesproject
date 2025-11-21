@@ -159,7 +159,7 @@ h1, h2, h3 {
     color: #4b5563;
     margin-bottom: 12px;
 }
-
+    
 </style>
 """,
     unsafe_allow_html=True,
@@ -173,7 +173,7 @@ CSV_PATH = "collection.csv"
 # FUNÇÕES AUXILIARES DE DADOS
 # =========================================================
 def load_collection(csv_path: str) -> pd.DataFrame:
-    df = pd.read_csv(csv_path)
+    df = pd.read_excel(csv_path)
     if "own" in df.columns:
         df = df[df["own"] == 1]
     for col in [
@@ -335,8 +335,12 @@ def generate_tags(row: pd.Series, rating_str: str) -> List[str]:
 
     return list(dict.fromkeys(tags))
 
-
 def generate_desc(row: pd.Series, rating_str: str) -> str:
+    # Se tiver coluna "comentarios", usa ela
+    if "comment" in row and isinstance(row["comment"], str) and row["comment"].strip():
+        return row["comment"].strip()
+
+    # Fallback para descrição gerada automaticamente
     nome = row["objectname"]
     players = format_players(row)
     time = format_playtime(row)
