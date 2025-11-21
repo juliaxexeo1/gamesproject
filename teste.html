@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Catálogo de Jogos de Tabuleiro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-alt: #020617;
+      --card-bg: #020617;
+      --card-border: #1e293b;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56,189,248,0.12);
+      --accent-strong: rgba(56,189,248,0.85);
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --tag-bg: #1e293b;
+      --tag-active-bg: #0369a1;
+      --tag-active-border: #38bdf8;
+      --shadow-soft: 0 18px 45px rgba(15,23,42,0.9);
+      --radius-lg: 18px;
+      --radius-pill: 999px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top left, #0f172a 0, #020617 50%, #000 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .shell {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: clamp(1.8rem, 3vw, 2.4rem);
+      margin: 0;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    header h1 span.badge {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148,163,184,0.35);
+      color: var(--muted);
+    }
+
+    header p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 640px;
+      font-size: 0.95rem;
+    }
+
+    /* Painel de filtros */
+
+    .controls {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: linear-gradient(to bottom, rgba(15,23,42,0.96), rgba(15,23,42,0.85));
+      backdrop-filter: blur(16px);
+      border-radius: var(--radius-lg);
+      padding: 14px 14px 10px;
+      border: 1px solid rgba(30,64,175,0.35);
+      box-shadow: 0 18px 50px rgba(15,23,42,0.8);
+      margin-bottom: 24px;
+    }
+
+    .controls-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .controls-title {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--muted);
+    }
+
+    .controls-meta {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .controls-meta span {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .filter-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-right: 4px;
+      white-space: nowrap;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag-btn {
+      border-radius: var(--radius-pill);
+      border: 1px solid transparent;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      background: rgba(15,23,42,0.9);
+      color: var(--muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.16s ease;
+    }
+
+    .tag-btn:hover {
+      border-color: rgba(148,163,184,0.6);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+
+    .tag-btn.active {
+      background: var(--tag-active-bg);
+      border-color: var(--tag-active-border);
+      color: #e0f2fe;
+      box-shadow: 0 0 0 1px rgba(56,189,248,0.45), 0 12px 30px rgba(8,47,73,0.8);
+    }
+
+    .tag-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .clear-btn {
+      margin-left: auto;
+      font-size: 0.78rem;
+      background: transparent;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148,163,184,0.45);
+      color: var(--muted);
+      padding: 4px 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.16s ease;
+    }
+
+    .clear-btn:hover {
+      color: var(--text);
+      border-color: var(--accent);
+      background: rgba(15,23,42,0.9);
+      transform: translateY(-1px);
+    }
+
+    /* Grade de jogos */
+
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    .game-card {
+      background: radial-gradient(circle at top left, #020617 0, #020617 40%, #000 130%);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      isolation: isolate;
+    }
+
+    .game-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 10% 0%, rgba(56,189,248,0.14), transparent 60%);
+      opacity: 0.85;
+      pointer-events: none;
+      mix-blend-mode: screen;
+      z-index: -1;
+    }
+
+    .game-image-wrapper {
+      position: relative;
+      overflow: hidden;
+      max-height: 180px;
+    }
+
+    .game-image-wrapper img {
+      width: 100%;
+      display: block;
+      object-fit: cover;
+      transform: scale(1.02);
+      transition: transform 0.35s ease;
+    }
+
+    .game-card:hover .game-image-wrapper img {
+      transform: scale(1.06);
+    }
+
+    .game-pill {
+      position: absolute;
+      left: 12px;
+      bottom: 10px;
+      padding: 3px 9px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      border-radius: var(--radius-pill);
+      background: rgba(15,23,42,0.92);
+      color: var(--muted);
+      border: 1px solid rgba(148,163,184,0.6);
+      backdrop-filter: blur(10px);
+    }
+
+    .game-body {
+      padding: 14px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .game-title-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: baseline;
+    }
+
+    .game-title {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .game-meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .game-meta span {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .game-attrs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .chip {
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      background: rgba(15,23,42,0.9);
+      border: 1px solid rgba(51,65,85,0.9);
+    }
+
+    .chip strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .game-description {
+      font-size: 0.85rem;
+      color: #cbd5f5;
+      line-height: 1.5;
+    }
+
+    .game-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .game-tag {
+      border-radius: var(--radius-pill);
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      background: var(--tag-bg);
+      color: var(--muted);
+      border: 1px solid rgba(30,64,175,0.6);
+    }
+
+    .game-tag span {
+      color: var(--accent);
+      margin-right: 4px;
+    }
+
+    .empty-state {
+      margin-top: 40px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .empty-state strong {
+      color: var(--accent);
+    }
+
+    @media (max-width: 640px) {
+      .controls {
+        padding: 12px 10px 8px;
+      }
+      .game-card {
+        border-radius: 16px;
+      }
+      .shell {
+        padding-inline: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <h1>
+        Catálogo de Jogos de Tabuleiro
+        <span class="badge">Protótipo interativo</span>
+      </h1>
+      <p>
+        Explore sua coleção de jogos de tabuleiro. Use as <strong>tags</strong> para filtrar estilos
+        de jogo (estratégia, cooperativo, familiar, party game, pesado, etc.) e encontrar rapidamente
+        o próximo jogo da mesa.
+      </p>
+    </header>
+
+    <section class="controls" aria-label="Filtros de jogos">
+      <div class="controls-header">
+        <div class="controls-title">Filtrar por tags</div>
+        <div class="controls-meta">
+          <span id="games-count">0</span> jogos exibidos
+        </div>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Tags:</span>
+        <div class="tags" id="tags-container">
+          <!-- Botões de tags preenchidos via JavaScript -->
+        </div>
+        <button id="clear-filters" class="clear-btn" type="button">
+          ✕ Limpar filtros
+        </button>
+      </div>
+    </section>
+
+    <main>
+      <div id="games-grid" class="games-grid" aria-live="polite">
+        <!-- Cartões dos jogos preenchidos via JavaScript -->
+      </div>
+      <div id="empty-state" class="empty-state" style="display:none;">
+        Nenhum jogo corresponde às tags selecionadas.
+        <br />
+        <strong>Experimente remover alguns filtros.</strong>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ====== Dados de exemplo do catálogo ======
+    // Você pode substituir/expandir esta lista com seus próprios jogos.
+    const jogos = [
+      {
+        id: 1,
+        nome: "Catan",
+        imagem: "https://images.pexels.com/photos/1314435/pexels-photo-1314435.jpeg?auto=compress&cs=tinysrgb&w=800",
+        ano: 1995,
+        jogadores: "3–4",
+        duracao: "60–90 min",
+        idade: "10+",
+        peso: "médio",
+        descricao: "Jogo de negociação e construção de colônias em uma ilha em expansão. Ideal para introduzir mecânicas modernas a novos jogadores.",
+        tags: ["estratégia", "familiar", "negociação", "clássico"]
+      },
+      {
+        id: 2,
+        nome: "Pandemic",
+        imagem: "https://images.pexels.com/photos/4112072/pexels-photo-4112072.jpeg?auto=compress&cs=tinysrgb&w=800",
+        ano: 2008,
+        jogadores: "2–4",
+        duracao: "45–60 min",
+        idade: "8+",
+        peso: "médio",
+        descricao: "Jogo cooperativo em que os jogadores são especialistas tentando conter surtos de doenças pelo mundo antes que seja tarde demais.",
+        tags: ["cooperativo", "estratégia", "temático", "familiar"]
+      },
+      {
+        id: 3,
+        nome: "Azul",
+        imagem: "https://images.pexels.com/photos/4112071/pexels-photo-4112071.jpeg?auto=compress&cs=tinysrgb&w=800",
+        ano: 2017,
+        jogadores: "2–4",
+        duracao: "30–45 min",
+        idade: "8+",
+        peso: "leve",
+        descricao: "Jogo abstrato de alocação de peças em que os jogadores competem para criar o mosaico mais bonito, inspirando-se nos azulejos portugueses.",
+        tags: ["abstrato", "familiar", "leve", "premiado"]
+      },
+      {
+        id: 4,
+        nome: "Gloomhaven",
+        imagem: "https://images.pexels.com/photos/11115821/pexels-photo-11115821.jpeg?auto=compress&cs=tinysrgb&w=800",
+        ano: 2017,
+        jogadores: "1–4",
+        duracao: "90–150 min",
+        idade: "14+",
+        peso: "pesado",
+        descricao: "Campanha cooperativa de fantasia com combate tático, progressão de personagens e narrativa ramificada em um mundo persistente.",
+        tags: ["cooperativo", "campanha", "pesado", "fantasia"]
+      },
+      {
+        id: 5,
+        nome: "Dixit",
+        imagem: "https://images.pexels.com/photos/1314436/pexels-photo-1314436.jpeg?auto=compress&cs=tinysrgb&w=800",
+        ano: 2008,
+        jogadores: "3–6",
+        duracao: "30 min",
+        idade: "8+",
+        peso: "leve",
+        descricao: "Jogo de associação de ideias com cartas ilustradas oníricas, em que a criatividade e a leitura dos outros jogadores são fundamentais.",
+        tags: ["party game", "familiar", "criativo", "leve"]
+      },
+      {
+        id: 6,
+        nome: "Terraforming Mars",
+        imagem: "https://images.pexels.com/photos/586030/pexels-photo-586030.jpeg?auto=compress&cs=tinysrgb&w=800",
+        ano: 2016,
+        jogadores: "1–5",
+        duracao: "120 min",
+        idade: "12+",
+        peso: "pesado",
+        descricao: "Corporações competem e cooperam para tornar Marte habitável, gerenciando projetos, recursos e um motor de produção complexo.",
+        tags: ["estratégia", "pesado", "gestão de recursos", "sci-fi"]
+      }
+    ];
+
+    // ====== Lógica de filtragem por tags ======
+    const selectedTags = new Set();
+
+    const tagsContainer = document.getElementById("tags-container");
+    const gamesGrid = document.getElementById("games-grid");
+    const gamesCount = document.getElementById("games-count");
+    const emptyState = document.getElementById("empty-state");
+    const clearFiltersBtn = document.getElementById("clear-filters");
+
+    function collectUniqueTags(listaJogos) {
+      const set = new Set();
+      listaJogos.forEach(jogo => {
+        jogo.tags.forEach(tag => set.add(tag));
+      });
+      return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    }
+
+    function renderTagButtons() {
+      const tags = collectUniqueTags(jogos);
+      tagsContainer.innerHTML = "";
+
+      tags.forEach(tag => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "tag-btn";
+        btn.dataset.tag = tag;
+
+        const dot = document.createElement("span");
+        dot.className = "tag-dot";
+
+        const label = document.createElement("span");
+        label.textContent = tag;
+
+        btn.appendChild(dot);
+        btn.appendChild(label);
+
+        btn.addEventListener("click", () => toggleTag(tag, btn));
+        tagsContainer.appendChild(btn);
+      });
+    }
+
+    function toggleTag(tag, button) {
+      if (selectedTags.has(tag)) {
+        selectedTags.delete(tag);
+        button.classList.remove("active");
+      } else {
+        selectedTags.add(tag);
+        button.classList.add("active");
+      }
+      renderGames();
+    }
+
+    function clearFilters() {
+      selectedTags.clear();
+      document.querySelectorAll(".tag-btn.active").forEach(btn => {
+        btn.classList.remove("active");
+      });
+      renderGames();
+    }
+
+    clearFiltersBtn.addEventListener("click", clearFilters);
+
+    function jogoPassaFiltro(jogo) {
+      if (selectedTags.size === 0) return true;
+      // AND: o jogo deve conter todas as tags selecionadas
+      for (const tag of selectedTags) {
+        if (!jogo.tags.includes(tag)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function renderGames() {
+      gamesGrid.innerHTML = "";
+      const filtrados = jogos.filter(jogo => jogoPassaFiltro(jogo));
+      gamesCount.textContent = filtrados.length.toString();
+
+      if (filtrados.length === 0) {
+        emptyState.style.display = "block";
+        return;
+      } else {
+        emptyState.style.display = "none";
+      }
+
+      filtrados.forEach(jogo => {
+        const card = document.createElement("article");
+        card.className = "game-card";
+
+        const imgWrapper = document.createElement("div");
+        imgWrapper.className = "game-image-wrapper";
+
+        const img = document.createElement("img");
+        img.src = jogo.imagem;
+        img.alt = `Capa ou foto do jogo ${jogo.nome}`;
+        img.loading = "lazy";
+
+        const pill = document.createElement("div");
+        pill.className = "game-pill";
+        pill.textContent = `Lançado em ${jogo.ano}`;
+
+        imgWrapper.appendChild(img);
+        imgWrapper.appendChild(pill);
+
+        const body = document.createElement("div");
+        body.className = "game-body";
+
+        const titleRow = document.createElement("div");
+        titleRow.className = "game-title-row";
+
+        const title = document.createElement("h2");
+        title.className = "game-title";
+        title.textContent = jogo.nome;
+
+        const meta = document.createElement("div");
+        meta.className = "game-meta";
+        meta.innerHTML = `<span>${jogo.jogadores}</span> jogadores`;
+
+        titleRow.appendChild(title);
+        titleRow.appendChild(meta);
+
+        const attrs = document.createElement("div");
+        attrs.className = "game-attrs";
+        attrs.innerHTML = `
+          <span class="chip"><strong>Tempo:</strong> ${jogo.duracao}</span>
+          <span class="chip"><strong>Idade:</strong> ${jogo.idade}</span>
+          <span class="chip"><strong>Peso:</strong> ${jogo.peso}</span>
+        `;
+
+        const desc = document.createElement("p");
+        desc.className = "game-description";
+        desc.textContent = jogo.descricao;
+
+        const tagsRow = document.createElement("div");
+        tagsRow.className = "game-tags";
+
+        jogo.tags.forEach(tag => {
+          const t = document.createElement("span");
+          t.className = "game-tag";
+          t.innerHTML = `<span>#</span>${tag}`;
+          tagsRow.appendChild(t);
+        });
+
+        body.appendChild(titleRow);
+        body.appendChild(attrs);
+        body.appendChild(desc);
+        body.appendChild(tagsRow);
+
+        card.appendChild(imgWrapper);
+        card.appendChild(body);
+
+        gamesGrid.appendChild(card);
+      });
+    }
+
+    // Inicialização
+    renderTagButtons();
+    renderGames();
+  </script>
+</body>
+</html>
