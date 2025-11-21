@@ -17,7 +17,7 @@ st.set_page_config(
 
 
 # =========================================================
-# ESTILO GLOBAL – CLEAN GIRL
+# ESTILO GLOBAL – CLEAN GIRL (APENAS MODO CLARO)
 # =========================================================
 st.markdown(
     """
@@ -140,7 +140,8 @@ h1, h2, h3 {
 }
 
 /* Label dos filtros */
-.stRadio > label, .stMultiSelect > label, .stTextInput > label, .stSelectbox > label {
+.stRadio > label, .stMultiSelect > label,
+.stTextInput > label, .stSelectbox > label {
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -505,7 +506,7 @@ else:
                     f"""
 <div class="card-base cool-card">
     <div class="game-title">{emoji_prefix}{jogo['nome']}</div>
-    <div class="game-meta" style="font-size:0.86rem; color:#6b7280; margin-top:4px;">
+    <div style="font-size:0.86rem; color:#6b7280; margin-top:4px;">
         <strong>Rating:</strong> {jogo['rating']} · 
         <strong>Tempo:</strong> {jogo['tempo']} · 
         <strong>Jogadores:</strong> {jogo['jogadores']} · 
