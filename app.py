@@ -67,7 +67,7 @@ h1, h2, h3 {
     width: 56px;
     height: 56px;
     border-radius: 999px;
-    background: radial-gradient(circle at 30% 20%, #ffffff 0%, #f9d5c5 55%, #e6a28f 100%);
+   
     display: flex;
     align-items: center;
     justify-content: center;
@@ -361,14 +361,14 @@ st.markdown(
     """
 <div class="zula-header">
   <div class="zula-header-left">
-    <div class="zula-avatar">☺︎</div>
+    <div class="zula-avatar">🌸</div>
     <div>
-      <div class="zula-title-main">Zula Board Game Bar</div>
-      <div class="zula-title-sub">Jogos de tabuleiro, drinks e boas conversas.</div>
+      <div class="zula-title-main">Júlia 25 Anos</div>
+      <div class="zula-title-sub">.</div>
     </div>
   </div>
   <div class="zula-header-right" style="font-size:0.85rem; color:#6b7280;">
-    catálogo pessoal · bgg collection
+    catálogo pessoal
   </div>
 </div>
 """,
