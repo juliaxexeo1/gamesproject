@@ -235,28 +235,13 @@ def format_playtime(row: pd.Series) -> str:
 
 def map_item_type(t) -> str:
     if isinstance(t, str):
-        t = t.lower().strip()
+        t = t.lower().strip().capitalize()
         if t == "standalone":
             return "Jogo base"
         if t == "expansion":
             return "Expansão"
-    return  t.lower().strip()
-
-
-def compute_rating_display(row: pd.Series) -> str:
-    try:
-        r = float(row["rating"])
-        if r > 0:
-            return f"{r:.1f}"
-    except Exception:
-        pass
-    try:
-        a = float(row["average"])
-        if a > 0:
-            return f"{a:.2f}"
-    except Exception:
-        pass
-    return "—"
+        return t
+    return ""
 
 
 def language_tag(t: str) -> str:
@@ -274,24 +259,8 @@ def language_tag(t: str) -> str:
     return ""
 
 
-def rating_emoji(rating_str: str) -> str:
-    """Emojis dinâmicos para rating."""
-    try:
-        r = float(rating_str)
-    except Exception:
-        return ""
-    if r >= 9.0:
-        return "🌟"
-    if r >= 8.0:
-        return "⭐"
-    if r >= 7.0:
-        return "✨"
-    if r > 0:
-        return "💗"
-    return ""
-
-
-def generate_tags(row: pd.Series, rating_str: str) -> List[str]:
+def generate_tags(row: pd.Series) -> List[str]:
+    """Gera tags a partir de jogadores, tempo, idioma e tipo."""
     tags: List[str] = []
 
     # Jogadores
@@ -325,33 +294,26 @@ def generate_tags(row: pd.Series, rating_str: str) -> List[str]:
     if lang:
         tags.append(lang)
 
-    # Rating
-    try:
-        rv = float(rating_str)
-        if rv >= 8.0:
-            tags.append("favorito")
-        elif rv >= 7.0:
-            tags.append("bem avaliado")
-    except Exception:
-        pass
+    # Tipo como tag
+    tipo = map_item_type(row["itemtype"])
+    if isinstance(tipo, str) and tipo:
+        tags.append(tipo)
 
+    # Remove duplicatas preservando ordem
     return list(dict.fromkeys(tags))
 
 
-def generate_desc(row: pd.Series, rating_str: str) -> str:
-    # Se tiver coluna "comentarios", usa ela como descrição
+def generate_desc(row: pd.Series) -> str:
+    # Se tiver coluna "comment", usa ela como descrição (ajuste se seu Excel usar outro nome)
     if "comment" in row and isinstance(row["comment"], str) and row["comment"].strip():
         return row["comment"].strip()
 
-    # Fallback para descrição gerada automaticamente
     nome = row["objectname"]
     players = format_players(row)
     time = format_playtime(row)
-    tipo = map_item_type(row["itemtype"])
+    tipo = map_item_type(row["itemtype"]) or "jogo"
 
     text = f"{nome} é um {tipo.lower()}, para {players} jogadores, com duração média de {time}."
-    if rating_str != "—":
-        text += f" Avaliação atual: {rating_str}."
     return textwrap.shorten(text, width=240, placeholder="…")
 
 
@@ -361,26 +323,22 @@ def build_catalog(path: str) -> List[Dict]:
     items: List[Dict] = []
     n = 680008
     for _, row in df.iterrows():
-        n+=1
+        n += 1
         try:
             oid = int(row["objectid"])
         except Exception:
             oid = n
-            
 
-        rating_str = compute_rating_display(row)
-        emoji = rating_emoji(rating_str)
+        item_tipo = map_item_type(row["itemtype"])
 
         item = {
             "id": oid,
             "nome": row["objectname"],
-            "rating": rating_str,
-            "emoji": emoji,
             "tempo": format_playtime(row),
             "jogadores": format_players(row),
-            "tipo": map_item_type(row["itemtype"]),
-            "tags": generate_tags(row, rating_str),
-            "descricao": generate_desc(row, rating_str),
+            "tipo": item_tipo,
+            "tags": generate_tags(row),
+            "descricao": generate_desc(row),
         }
         items.append(item)
     return items
@@ -419,7 +377,7 @@ st.markdown(
 
 
 # =========================================================
-# FILTROS NO TOPO
+# FILTROS NO TOPO — APENAS POR TIPO
 # =========================================================
 st.markdown('<div class="top-filter-box">', unsafe_allow_html=True)
 
@@ -428,12 +386,17 @@ c1, c2 = st.columns([3, 2])
 with c1:
     termo = st.text_input(
         "Buscar jogo",
-        placeholder="ex: rápido, favorito, 2 jogadores…",
+        placeholder="ex: nome, rápido, 2 jogadores…",
     )
 
 with c2:
-    todas_tags = sorted({t for i in catalogo for t in i["tags"]})
-    tags_sel = st.multiselect("Filtrar por tags", todas_tags)
+    # pega todos os tipos existentes no catálogo
+    tipos_unicos = sorted({i["tipo"] for i in catalogo if i["tipo"]})
+    tipo_sel = st.selectbox(
+        "Filtrar por tipo",
+        ["Todos"] + tipos_unicos,
+        index=0,
+    )
 
 c3, c4 = st.columns([2, 2])
 
@@ -451,8 +414,6 @@ with c4:
         [
             "Ordem alfabética (A–Z)",
             "Ordem inversa (Z–A)",
-            "Rating (maior → menor)",
-            "Rating (menor → maior)",
         ],
     )
 
@@ -460,38 +421,32 @@ st.markdown("</div>", unsafe_allow_html=True)
 
 
 # =========================================================
-# FILTRAGEM + ORDENAÇÃO
+# FILTRAGEM + ORDENAÇÃO (APENAS POR TIPO)
 # =========================================================
 def match(item: Dict) -> bool:
-    if tags_sel:
-        if not all(t in item["tags"] for t in tags_sel):
-            return False
+    # Filtro por tipo (exclusivo)
+    if tipo_sel != "Todos" and item["tipo"] != tipo_sel:
+        return False
+
+    # Filtro por texto (nome, descrição, tags)
     if termo:
         low = termo.lower()
-        if low not in item["nome"].lower() and low not in item["descricao"].lower():
-            if not any(low in tg.lower() for tg in item["tags"]):
-                return False
+        nome_ok = low in item["nome"].lower()
+        desc_ok = low in item["descricao"].lower()
+        tags_ok = any(low in t.lower() for t in item["tags"])
+        if not (nome_ok or desc_ok or tags_ok):
+            return False
+
     return True
 
 
 filtrados = [i for i in catalogo if match(i)]
 
-
-def parse_rating(r):
-    try:
-        return float(r)
-    except Exception:
-        return -1.0
-
-
+# Ordenação
 if ordem == "Ordem alfabética (A–Z)":
     filtrados = sorted(filtrados, key=lambda x: x["nome"].lower())
-elif ordem == "Ordem inversa (Z–A)":
+else:
     filtrados = sorted(filtrados, key=lambda x: x["nome"].lower(), reverse=True)
-elif ordem == "Rating (maior → menor)":
-    filtrados = sorted(filtrados, key=lambda x: parse_rating(x["rating"]), reverse=True)
-elif ordem == "Rating (menor → maior)":
-    filtrados = sorted(filtrados, key=lambda x: parse_rating(x["rating"]))
 
 
 st.markdown(
@@ -511,13 +466,11 @@ else:
         cols = st.columns(2)
         for idx, jogo in enumerate(filtrados):
             with cols[idx % 2]:
-                emoji_prefix = f"{jogo['emoji']} " if jogo["emoji"] else ""
                 st.markdown(
                     f"""
 <div class="card-base cool-card">
-    <div class="game-title">{emoji_prefix}{jogo['nome']}</div>
+    <div class="game-title">{jogo['nome']}</div>
     <div style="font-size:0.86rem; color:#6b7280; margin-top:4px;">
-        <strong>Rating:</strong> {jogo['rating']} · 
         <strong>Tempo:</strong> {jogo['tempo']} · 
         <strong>Jogadores:</strong> {jogo['jogadores']} · 
         <strong>Tipo:</strong> {jogo['tipo']}
@@ -531,24 +484,20 @@ else:
                     unsafe_allow_html=True,
                 )
     else:
-        # LISTA: só o nome aparece; todo o resto vai para o expander
+        # LISTA: só o nome aparece; resto vai para o expander
         for jogo in filtrados:
-            emoji_prefix = f"{jogo['emoji']} " if jogo["emoji"] else ""
-
-            # cartão minimal com apenas o nome
             st.markdown(
                 f"""
 <div class="card-base list-card">
-    <div class="game-title">{emoji_prefix}{jogo['nome']}</div>
+    <div class="game-title">{jogo['nome']}</div>
 </div>
 """,
                 unsafe_allow_html=True,
             )
 
-            # tudo o resto dentro da descrição
             with st.expander("Ver descrição", expanded=False):
                 st.markdown(
-                    f"**Rating:** {jogo['rating']} · **Tempo:** {jogo['tempo']} · "
+                    f"**Tempo:** {jogo['tempo']} · "
                     f"**Jogadores:** {jogo['jogadores']} · **Tipo:** {jogo['tipo']}"
                 )
                 st.write(jogo["descricao"])
