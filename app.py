@@ -166,14 +166,15 @@ h1, h2, h3 {
 )
 
 
-CSV_PATH = "collection.csv"
+EXCEL_PATH = "collection.xlsx"
 
 
 # =========================================================
 # FUNÇÕES AUXILIARES DE DADOS
 # =========================================================
-def load_collection(csv_path: str) -> pd.DataFrame:
-    df = pd.read_csv(csv_path)
+def load_collection(excel_path: str) -> pd.DataFrame:
+    # Lê a primeira planilha do Excel
+    df = pd.read_excel(excel_path)
     if "own" in df.columns:
         df = df[df["own"] == 1]
     for col in [
@@ -191,6 +192,7 @@ def load_collection(csv_path: str) -> pd.DataFrame:
         "yearpublished",
         "bggrecagerange",
         "bgglanguagedependence",
+        "comentarios",
     ]:
         if col not in df.columns:
             df[col] = None
@@ -238,7 +240,7 @@ def map_item_type(t) -> str:
             return "Jogo base"
         if t == "expansion":
             return "Expansão"
-    return "Desconhecido"
+    return  t.lower().strip()
 
 
 def compute_rating_display(row: pd.Series) -> str:
@@ -335,8 +337,9 @@ def generate_tags(row: pd.Series, rating_str: str) -> List[str]:
 
     return list(dict.fromkeys(tags))
 
+
 def generate_desc(row: pd.Series, rating_str: str) -> str:
-    # Se tiver coluna "comentarios", usa ela
+    # Se tiver coluna "comentarios", usa ela como descrição
     if "comment" in row and isinstance(row["comment"], str) and row["comment"].strip():
         return row["comment"].strip()
 
@@ -356,11 +359,14 @@ def generate_desc(row: pd.Series, rating_str: str) -> str:
 def build_catalog(path: str) -> List[Dict]:
     df = load_collection(path)
     items: List[Dict] = []
+    n = 680008
     for _, row in df.iterrows():
+        n+=1
         try:
             oid = int(row["objectid"])
         except Exception:
-            continue
+            oid = n
+            
 
         rating_str = compute_rating_display(row)
         emoji = rating_emoji(rating_str)
@@ -383,11 +389,11 @@ def build_catalog(path: str) -> List[Dict]:
 # =========================================================
 # CARREGAMENTO
 # =========================================================
-if not os.path.exists(CSV_PATH):
-    st.error("Coloque o arquivo collection.csv na mesma pasta do app.")
+if not os.path.exists(EXCEL_PATH):
+    st.error("Coloque o arquivo **collection.xlsx** na mesma pasta do app.")
     st.stop()
 
-catalogo = build_catalog(CSV_PATH)
+catalogo = build_catalog(EXCEL_PATH)
 
 
 # =========================================================
@@ -547,6 +553,4 @@ else:
                 )
                 st.write(jogo["descricao"])
                 if jogo["tags"]:
-                    st.markdown(
-                        "Tags: " + " ".join(f"`{t}`" for t in jogo["tags"])
-                    )
+                    st.markdown("Tags: " + " ".join(f"`{t}`" for t in jogo["tags"]))
